@@ -1,0 +1,3 @@
+[submodule "include/Boost.Trie"]
+	path = include/Boost.Trie
+	url = https://github.com/ithlony/Boost.Trie.git

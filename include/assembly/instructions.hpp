@@ -7,6 +7,8 @@
 
 namespace assembly
 {
+    const uint8_t RETN = 0xC3;
+
     using Op_t = std::vector<uint8_t>;
 
     // Storage for all of the opcodes
