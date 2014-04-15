@@ -7,6 +7,7 @@
 #include <algorithm>
 
 namespace options = boost::program_options;
+using namespace assembly;
 
 int main(int argc, char *argv[]) {
     try {
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
 
         // Help check before notify to prevent exception if requesting help with no file
         if (vm.count("help")) {
-            std::cout << desc << "\n";
+            std::cout << desc << std::endl;
             return 0;
         }
 
@@ -46,9 +47,9 @@ int main(int argc, char *argv[]) {
         auto contents = file::readBytes(vm["target"].as<std::string>());
         auto input = file::parse(vm["input"].as<std::string>());
 
-        boost::tries::trie_map<uint8_t, uint32_t> trie;
+        boost::tries::trie_map<Op_t, uint32_t> trie;
 
-        std::vector<std::vector<uint8_t>::iterator> retns;
+        std::vector<Op_t::iterator> retns;
         for(auto i = contents.begin(); i != contents.end(); ++i) {
             if (*i == assembly::RETN) {
                 retns.push_back(i);
@@ -56,9 +57,27 @@ int main(int argc, char *argv[]) {
         }
 
         for(auto retn : retns) {
-            std::cout << std::hex << std::distance(contents.begin(), retn) << std::endl;
+            for (auto start = retn-1; retn != contents.begin(); --start) {
+                Op_t opcode(start, retn);
+
+                if (assembly::opcodes.find(opcode) != assembly::opcodes.end()) {
+                    std::vector<Op_t> chain = {std::move(opcode)};
+                    trie[chain] = std::distance(contents.begin(), start);
+                }
+                else {
+                    break;
+                }
+            }
         }
 
+        std::vector<Op_t>::iterator i = input.begin();
+        for (std::vector<Op_t>::iterator j = input.begin()+1; j != input.end(); ++j) {
+            std::vector<Op_t> chain(i, j);
+            if (trie[chain] != 0) {
+                std::cout << std::hex << trie[chain] << std::endl;
+                i = j;
+            }
+        }
     }
     catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
