@@ -1,11 +1,12 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
-#include "assembly/instructions.hpp"
 
 namespace utils
 {
-    void writeOp(const assembly::Op_t& op, bool endl=true) {
+    using Op_t = std::vector<uint8_t>;
+
+    void writeOp(const Op_t& op, bool endl=true) {
         for (int i : op) {
             std::cout << std::hex << "0x" << i << " ";
         }
@@ -30,7 +31,7 @@ namespace utils
         std::vector<char> v(max);
         std::vector<std::vector<int>> combinations;
 
-        if (groups < 2) {return {{}};}
+        if (groups < 2) {return {std::vector<int>{}};}
 
         for (int i = 0; i < max; ++i) {
             v[i] = (i >= (max - r));
@@ -50,10 +51,9 @@ namespace utils
     }
 
     // Creates a vector of opcodes from a vector of breakpoints
-    std::vector<assembly::Op_t> codesFromCombination(const std::vector<int>& combination,
+    std::vector<Op_t> codesFromCombination(const std::vector<int>& combination,
                                                      std::vector<uint8_t>::iterator retn,
                                                      int depth) {
-        using namespace assembly;
 
         if (combination.empty()) {
             return {Op_t(retn-depth, retn)};

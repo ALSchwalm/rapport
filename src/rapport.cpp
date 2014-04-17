@@ -1,5 +1,4 @@
 
-#include "assembly/instructions.hpp"
 #include "file/parser.hpp"
 #include "utils/utils.hpp"
 #include "boost/trie/trie_map.hpp"
@@ -8,10 +7,12 @@
 #include <algorithm>
 
 namespace options = boost::program_options;
-using namespace assembly;
+using Op_t = std::vector<uint8_t>;
 
 int main(int argc, char *argv[]) {
     try {
+        int depth;
+
         options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
@@ -19,7 +20,9 @@ int main(int argc, char *argv[]) {
             ("pad,p", options::value<uint32_t>()->default_value(0), "pad output to fill buffer")
             ("target", options::value<std::string>()->required(), "file to search for ROP chains")
             ("input", options::value<std::string>()->required(), "instructions to locate")
-            ("depth", options::value<int>()->default_value(6), "bytes to search before RETN")
+            ("depth", options::value<int>(&depth)->default_value(6), "bytes to search before RETN")
+            ("retn", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
+            ("pprint", "print easily readable (but not usable) results")
             ;
 
         options::variables_map vm;
@@ -40,11 +43,15 @@ int main(int argc, char *argv[]) {
 
         options::notify(vm);
 
-        //Base is actually a hex number
+        //Convert hex string arguments to integers
         std::stringstream ss;
         uint32_t base;
+        uint32_t retn;
         ss << std::hex << vm["base"].as<std::string>();
         ss >> base;
+        ss.clear();
+        ss << std::hex << vm["retn"].as<std::string>();
+        ss >> retn;
 
         auto contents = file::readBytes(vm["target"].as<std::string>());
         auto input = file::parse(vm["input"].as<std::string>());
@@ -54,13 +61,12 @@ int main(int argc, char *argv[]) {
         //Locate all RETNs
         std::vector<Op_t::iterator> retns;
         for (auto i = contents.begin(); i != contents.end(); ++i) {
-            if (*i == assembly::RETN) {
+            if (*i == retn) {
                 retns.push_back(i);
             }
         }
 
         //Find the opcodes executable from the RETNs
-        auto depth = vm["depth"].as<int>();
         for (auto retn : retns) {
             for (int innerDepth = 1; innerDepth < depth; ++innerDepth) {
 
@@ -94,8 +100,20 @@ int main(int argc, char *argv[]) {
 
         //Print the solution
         if (solutionExists) {
+            std::cout << std::string(vm["pad"].as<uint32_t>(), '~');
             for (auto address : addresses) {
-                std::cout << std::hex << "0x" << base + address << std::endl;
+                auto addr = base + address;
+
+                if (vm.count("pprint")) {
+                    std::cout << std::hex << addr << std::endl;
+                }
+                else {
+                    for(uint8_t i = 0; i < 4; ++i) {
+                        auto shiftAddr = addr;
+                        char c = shiftAddr >> (i*8);
+                        std::cout << c;
+                    }
+                }
             }
         }
         else {
