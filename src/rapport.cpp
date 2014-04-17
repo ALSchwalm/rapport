@@ -1,6 +1,7 @@
 
 #include "assembly/instructions.hpp"
 #include "file/parser.hpp"
+#include "utils/utils.hpp"
 #include "boost/trie/trie_map.hpp"
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -18,6 +19,7 @@ int main(int argc, char *argv[]) {
             ("pad,p", options::value<uint32_t>()->default_value(0), "pad output to fill buffer")
             ("target", options::value<std::string>()->required(), "file to search for ROP chains")
             ("input", options::value<std::string>()->required(), "instructions to locate")
+            ("depth", options::value<int>()->default_value(6), "bytes to search before RETN")
             ;
 
         options::variables_map vm;
@@ -49,34 +51,66 @@ int main(int argc, char *argv[]) {
 
         boost::tries::trie_map<Op_t, uint32_t> trie;
 
+        //Locate all RETNs
         std::vector<Op_t::iterator> retns;
-        for(auto i = contents.begin(); i != contents.end(); ++i) {
+        for (auto i = contents.begin(); i != contents.end(); ++i) {
             if (*i == assembly::RETN) {
                 retns.push_back(i);
             }
         }
 
-        for(auto retn : retns) {
-            for (auto start = retn-1; retn != contents.begin(); --start) {
-                Op_t opcode(start, retn);
+        //Find the opcodes executable from the RETNs
+        auto depth = vm["depth"].as<int>();
+        for (auto retn : retns) {
+            for (int innerDepth = 1; innerDepth < depth; ++innerDepth) {
 
-                if (assembly::opcodes.find(opcode) != assembly::opcodes.end()) {
-                    std::vector<Op_t> chain = {std::move(opcode)};
-                    trie[chain] = std::distance(contents.begin(), start);
-                }
-                else {
+                if (retn - innerDepth < contents.begin()) {
                     break;
+                }
+
+                for (auto groups = 1; groups < innerDepth; ++groups) {
+                    if (false) {
+                        for (auto start = retn-1; start > retn-innerDepth; --start) {
+                            Op_t opcode(start, retn);
+                            if (assembly::isValidOp(opcode)) {
+                                std::vector<Op_t> chain(1, std::move(opcode));
+                                trie[chain] = std::distance(contents.begin(), start);
+                            }
+                        }
+                    }
+                    else {
+                        for (auto combination : utils::combinations(innerDepth, groups)) {
+                            auto chain = utils::codesFromCombination(combination, retn, innerDepth);
+                            trie[chain] = std::distance(contents.begin(), retn-innerDepth);
+                        }
+                    }
                 }
             }
         }
 
-        std::vector<Op_t>::iterator i = input.begin();
-        for (std::vector<Op_t>::iterator j = input.begin()+1; j != input.end(); ++j) {
+        //Determine where to jump to execute the instructions in the input
+        std::vector<uint32_t> addresses;
+        bool solutionExists = false;
+        for (auto i = input.begin(), j = input.begin(); j != input.end()+1; ++j) {
+
             std::vector<Op_t> chain(i, j);
             if (trie[chain] != 0) {
-                std::cout << std::hex << trie[chain] << std::endl;
+                addresses.push_back(trie[chain]);
                 i = j;
+                if (j == input.end()) {
+                    solutionExists = true;
+                }
             }
+        }
+
+        //Print the solution
+        if (solutionExists) {
+            for (auto address : addresses) {
+                std::cout << std::hex << "0x" << base + address << std::endl;
+            }
+        }
+        else {
+            std::cout << "Unable to find a solution\n";
         }
     }
     catch (const std::exception& e) {
