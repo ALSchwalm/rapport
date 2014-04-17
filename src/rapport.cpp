@@ -68,21 +68,10 @@ int main(int argc, char *argv[]) {
                     break;
                 }
 
-                for (auto groups = 1; groups < innerDepth; ++groups) {
-                    if (false) {
-                        for (auto start = retn-1; start > retn-innerDepth; --start) {
-                            Op_t opcode(start, retn);
-                            if (assembly::isValidOp(opcode)) {
-                                std::vector<Op_t> chain(1, std::move(opcode));
-                                trie[chain] = std::distance(contents.begin(), start);
-                            }
-                        }
-                    }
-                    else {
-                        for (auto combination : utils::combinations(innerDepth, groups)) {
-                            auto chain = utils::codesFromCombination(combination, retn, innerDepth);
-                            trie[chain] = std::distance(contents.begin(), retn-innerDepth);
-                        }
+                for (auto groups = 1; groups <= innerDepth; ++groups) {
+                    for (const auto& combination : utils::combinations(innerDepth, groups)) {
+                        auto chain = utils::codesFromCombination(combination, retn, innerDepth);
+                        trie[chain] = std::distance(contents.begin(), retn-innerDepth);
                     }
                 }
             }

@@ -13,7 +13,7 @@ namespace utils
             std::cout << std::endl;
     }
 
-    //Based on http://stackoverflow.com/a/9430993/3186747
+    // Based on http://stackoverflow.com/a/9430993/3186747
     /*
      * Returns a nested vector of each combination.
      * Example: in combinations(5, 3):
@@ -22,11 +22,15 @@ namespace utils
      *
      * 2 4 means groups of
      * {{0, 1}, {2, 3}, {4, 5}}
+     *
+     * The empty set means the line is one group
      */
     std::vector<std::vector<int>> combinations(int max, int groups) {
         int r = groups-1;
         std::vector<char> v(max);
         std::vector<std::vector<int>> combinations;
+
+        if (groups < 2) {return {{}};}
 
         for (int i = 0; i < max; ++i) {
             v[i] = (i >= (max - r));
@@ -45,10 +49,15 @@ namespace utils
         return combinations;
     }
 
+    // Creates a vector of opcodes from a vector of breakpoints
     std::vector<assembly::Op_t> codesFromCombination(const std::vector<int>& combination,
                                                      std::vector<uint8_t>::iterator retn,
                                                      int depth) {
         using namespace assembly;
+
+        if (combination.empty()) {
+            return {Op_t(retn-depth, retn)};
+        }
 
         std::vector<Op_t> chain;
         for (unsigned int i = 0; i < combination.size(); ++i) {
@@ -63,13 +72,7 @@ namespace utils
                                    retn - combination[i-1]);
             }
         }
-        std::reverse(chain.begin(), chain.end());/*
-        std::cout << "Chain:\n";
-        for (unsigned int i = 0; i < chain.size() ; ++i) {
-            std::cout << i+1 << " ";
-            writeOp(chain[i]);
-        }
-                                                 */
+        std::reverse(chain.begin(), chain.end());
         return chain;
     }
 }
