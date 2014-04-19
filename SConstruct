@@ -10,7 +10,7 @@ env = Environment(CXX=CXX, ENV = os.environ)
 
 env.Append(CXXFLAGS=['-Wall', '-Wextra', '-std=c++11'])
 env.Append(CPPPATH=['include', 'include/Boost.Trie'])
-env.Append(LIBS=["boost_system", "boost_program_options", "boost_filesystem"])
+env.Append(LIBS=["boost_program_options"])
 
 def create_objs(SRCS):
     return [env.Object(src) for src in SRCS]

@@ -1,7 +1,6 @@
 
 #include "file/parser.hpp"
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem.hpp>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -9,8 +8,6 @@
 
 namespace file
 {
-    namespace fs = boost::filesystem;
-
     namespace {
         uint8_t toByte(const std::string& hexByte) {
             std::stringstream ss;;
@@ -23,12 +20,13 @@ namespace file
 
     std::vector<uint8_t> readBytes(const std::string& filename)
     {
-        if (!fs::exists(filename)) {
+        using namespace std;
+        ifstream ifs(filename, ios::binary | ios::ate);
+
+        if (!ifs) {
             throw std::invalid_argument("No such file: " + filename);
         }
 
-        using namespace std;
-        ifstream ifs(filename, ios::binary | ios::ate);
         auto pos = ifs.tellg();
 
         vector<uint8_t> result(pos);
@@ -42,12 +40,13 @@ namespace file
 
     std::vector<std::vector<uint8_t>> parse(const std::string& filename)
     {
-        if (!fs::exists(filename)) {
+        std::vector<std::vector<uint8_t>> output;
+        std::ifstream ifs(filename);
+
+        if (!ifs) {
             throw std::invalid_argument("No such file: " + filename);
         }
 
-        std::vector<std::vector<uint8_t>> output;
-        std::ifstream ifs(filename);
         std::stringstream ss;
         std::string token, line;
 

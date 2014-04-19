@@ -12,14 +12,13 @@ using Op_t = std::vector<uint8_t>;
 int main(int argc, char *argv[]) {
     try {
         int depth;
-
         options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
             ("base,b", options::value<std::string>()->default_value("0x0"), "base address")
             ("pad,p", options::value<uint32_t>()->default_value(0), "pad output to fill buffer")
-            ("target", options::value<std::string>()->required(), "file to search for ROP chains")
-            ("input", options::value<std::string>()->required(), "instructions to locate")
+            ("target", options::value<std::string>()->required(), "file from which to build ROP chain")
+            ("input", options::value<std::string>()->required(), "instructions to be executed")
             ("depth", options::value<int>(&depth)->default_value(6), "bytes to search before RETN")
             ("retn", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
             ("pprint", "print easily readable (but not usable) results")
