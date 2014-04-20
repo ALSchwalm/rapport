@@ -11,7 +11,7 @@ using Op_t = std::vector<uint8_t>;
 
 int main(int argc, char *argv[]) {
     try {
-        int depth;
+        int depth, addressSize;
         options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
@@ -19,8 +19,9 @@ int main(int argc, char *argv[]) {
             ("pad,p", options::value<uint32_t>()->default_value(0), "pad output to fill buffer")
             ("target", options::value<std::string>()->required(), "file from which to build ROP chain")
             ("input", options::value<std::string>()->required(), "instructions to be executed")
-            ("depth", options::value<int>(&depth)->default_value(6), "bytes to search before RETN")
-            ("retn", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
+            ("depth,d", options::value<int>(&depth)->default_value(6), "bytes to search before RETN")
+            ("retn,r", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
+            ("addrsize,a", options::value<int>(&addressSize)->default_value(sizeof(size_t)), "bytes per output address")
             ("pprint", "print easily readable (but not usable) results")
             ;
 
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
 
         //Convert hex string arguments to integers
         std::stringstream ss;
-        uint32_t base;
+        size_t base;
         uint32_t retn;
         ss << std::hex << vm["base"].as<std::string>();
         ss >> base;
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
         auto contents = file::readBytes(vm["target"].as<std::string>());
         auto input = file::parse(vm["input"].as<std::string>());
 
-        boost::tries::trie_map<Op_t, uint32_t> trie;
+        boost::tries::trie_map<Op_t, size_t> trie;
 
         //Locate all RETNs
         std::vector<Op_t::iterator> retns;
@@ -83,7 +84,7 @@ int main(int argc, char *argv[]) {
         }
 
         //Determine where to jump to execute the instructions in the input
-        std::vector<uint32_t> addresses;
+        std::vector<size_t> addresses;
         bool solutionExists = false;
         for (auto i = input.begin(), j = input.begin(); j != input.end()+1; ++j) {
 
@@ -99,7 +100,8 @@ int main(int argc, char *argv[]) {
 
         //Print the solution
         if (solutionExists) {
-            std::cout << std::string(vm["pad"].as<uint32_t>(), '~');
+            if (!vm.count("pprint"))
+                std::cout << std::string(vm["pad"].as<uint32_t>(), '~');
             for (auto address : addresses) {
                 auto addr = base + address;
 
@@ -107,7 +109,7 @@ int main(int argc, char *argv[]) {
                     std::cout << std::hex << addr << std::endl;
                 }
                 else {
-                    for(uint8_t i = 0; i < 4; ++i) {
+                    for(uint8_t i = 0; i < addressSize; ++i) {
                         auto shiftAddr = addr;
                         char c = shiftAddr >> (i*8);
                         std::cout << c;
