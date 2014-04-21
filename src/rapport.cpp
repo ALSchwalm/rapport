@@ -6,13 +6,16 @@
 #include <iostream>
 #include <algorithm>
 #include <utility>
+#include <tuple>
 
 namespace options = boost::program_options;
 using assembly::Op_t;
 
 int main(int argc, char *argv[]) {
     try {
-        int depth, addressSize;
+        int depth;
+        std::string strArch, strMode;
+
         options::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
@@ -21,8 +24,8 @@ int main(int argc, char *argv[]) {
             ("target", options::value<std::string>()->required(), "file from which to build ROP chain")
             ("input", options::value<std::string>()->required(), "instructions to be executed")
             ("depth,d", options::value<int>(&depth)->default_value(6), "bytes to search before RETN")
-            ("retn,r", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
-            ("addrsize,a", options::value<int>(&addressSize)->default_value(sizeof(size_t)), "bytes per output address")
+            ("arch,a", options::value<std::string>(&strArch)->default_value("X86"), "target architecture")
+            ("mode,m", options::value<std::string>(&strMode)->default_value("32"), "target mode")
             ("pprint", "print easily readable (but not usable) results")
             ("verbose,v", "print all gadgets found")
             ;
@@ -45,30 +48,34 @@ int main(int argc, char *argv[]) {
 
         options::notify(vm);
 
-        //Convert hex string arguments to integers
+        // Convert hex string arguments to integers
         std::stringstream ss;
         size_t base;
-        uint32_t retn;
+
         ss << std::hex << vm["base"].as<std::string>();
         ss >> base;
-        ss.clear();
-        ss << std::hex << vm["retn"].as<std::string>();
-        ss >> retn;
+
+        cs_arch arch;
+        cs_mode mode;
+        short addressSize;
+        std::tie(arch, mode, addressSize) = assembly::toArchMode(strArch, strMode);
+
+        auto terminators = assembly::getTerminators(arch);
 
         auto contents = file::readBytes(vm["target"].as<std::string>());
         auto input = file::parse(vm["input"].as<std::string>());
 
         boost::tries::trie_map<Op_t, size_t> trie;
 
-        //Locate all RETNs
+        // Locate all RETNs
         std::vector<Op_t::iterator> retns;
         for (auto i = contents.begin(); i != contents.end(); ++i) {
-            if (*i == retn) {
+            if (std::find(terminators.begin(), terminators.end(), *i) != terminators.end()) {
                 retns.push_back(i);
             }
         }
 
-        //Find the opcodes executable from the RETNs
+        // Find the opcodes executable from the RETNs
         for (auto retn : retns) {
             for (int innerDepth = 1; innerDepth < depth; ++innerDepth) {
 
@@ -96,7 +103,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        //Determine where to jump to execute the instructions in the input
+        // Determine where to jump to execute the instructions in the input
         std::vector<size_t> addresses;
         bool solutionExists = false;
         for (auto i = input.begin(), j = input.begin(); j != input.end()+1; ++j) {
@@ -111,7 +118,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        //Print the solution
+        // Print the solution
         if (solutionExists) {
             if (!vm.count("pprint"))
                 std::cout << std::string(vm["pad"].as<uint32_t>(), '~');

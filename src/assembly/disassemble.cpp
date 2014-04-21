@@ -44,4 +44,55 @@ namespace assembly {
         cs_close(&handle);
         return instructions;
     }
+
+    std::tuple<cs_arch, cs_mode, short> toArchMode(const std::string& arch,
+                                                   const std::string& mode) {
+        using std::make_tuple;
+
+        if (arch == "X86") {
+            if (mode == "16") {return make_tuple(CS_ARCH_X86, CS_MODE_16, 2);}
+            else if (mode == "32")   {return make_tuple(CS_ARCH_X86, CS_MODE_32, 4);}
+            else if (mode == "64")   {return make_tuple(CS_ARCH_X86, CS_MODE_64, 8);}
+            else {
+                throw std::invalid_argument("Unknown or incompatible mode: " + mode);
+            }
+        }
+        else if (arch == "ARM") {
+            if (mode == "ARM")        {return make_tuple(CS_ARCH_ARM, CS_MODE_ARM, 4);}
+            else if (mode == "THUMB") {return make_tuple(CS_ARCH_ARM, CS_MODE_THUMB, 2);}
+            else {
+                throw std::invalid_argument("Unknown or incompatible mode: " + mode);
+            }
+        }
+        else if (arch == "ARM64") {
+            if (mode == "LE") {return make_tuple(CS_ARCH_ARM64, CS_MODE_LITTLE_ENDIAN, 8);}
+            else {
+                throw std::invalid_argument("Unknown or incompatible mode: " + mode);
+            }
+        }
+        else if (arch == "PPC") {
+            if (mode == "32")      {return make_tuple(CS_ARCH_PPC, CS_MODE_32, 4);}
+            else if (mode == "64") {return make_tuple(CS_ARCH_PPC, CS_MODE_64, 8);}
+            else {
+                throw std::invalid_argument("Unknown or incompatible mode: " + mode);
+            }
+        }
+        else if (arch == "MIPS") {
+            if (mode == "32")      {return make_tuple(CS_ARCH_MIPS, CS_MODE_32, 4);}
+            else if (mode == "64") {return make_tuple(CS_ARCH_MIPS, CS_MODE_64, 8);}
+            else {
+                throw std::invalid_argument("Unknown or incompatible mode: " + mode);
+            }
+        }
+        else {
+            throw std::invalid_argument("Unknown architecture: " + arch);
+        }
+    }
+
+    std::vector<uint8_t> getTerminators(cs_arch arch) {
+        if (arch == CS_ARCH_X86) {
+            return {0xC3};
+        }
+    }
+
 }
