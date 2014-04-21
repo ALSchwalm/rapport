@@ -1,13 +1,14 @@
-
 #include "file/parser.hpp"
 #include "utils/utils.hpp"
+#include "assembly/disassemble.hpp"
 #include "boost/trie/trie_map.hpp"
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 namespace options = boost::program_options;
-using Op_t = std::vector<uint8_t>;
+using assembly::Op_t;
 
 int main(int argc, char *argv[]) {
     try {
@@ -23,6 +24,7 @@ int main(int argc, char *argv[]) {
             ("retn,r", options::value<std::string>()->default_value("0xC3"), "opcode for REN")
             ("addrsize,a", options::value<int>(&addressSize)->default_value(sizeof(size_t)), "bytes per output address")
             ("pprint", "print easily readable (but not usable) results")
+            ("verbose,v", "print all gadgets found")
             ;
 
         options::variables_map vm;
@@ -74,12 +76,23 @@ int main(int argc, char *argv[]) {
                     break;
                 }
 
-                for (auto groups = 1; groups <= innerDepth; ++groups) {
-                    for (const auto& combination : utils::combinations(innerDepth, groups)) {
-                        auto chain = utils::codesFromCombination(combination, retn, innerDepth);
-                        trie[chain] = std::distance(contents.begin(), retn-innerDepth);
+                auto instructions = assembly::disassemble({retn-innerDepth, retn});
+
+                if (instructions.size()) {
+                    std::vector<Op_t> chain;
+                    for(auto& instruction : instructions) {
+                        chain.emplace_back(std::move(std::get<0>(instruction)));
                     }
+                    if (vm.count("verbose") && !trie[chain]) {
+                        for (const auto& instruction : instructions) {
+                            std::cout << "0x" << std::hex << std::distance(contents.begin(), retn-innerDepth) + base;
+                            std::cout << "  " << std::get<1>(instruction);
+                        }
+                        std::cout << std::endl;
+                    }
+                    trie[chain] = std::distance(contents.begin(), retn-innerDepth);
                 }
+
             }
         }
 
