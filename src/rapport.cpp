@@ -49,11 +49,7 @@ int main(int argc, char *argv[]) {
         options::notify(vm);
 
         // Convert hex string arguments to integers
-        std::stringstream ss;
-        size_t base;
-
-        ss << std::hex << vm["base"].as<std::string>();
-        ss >> base;
+        size_t base = std::stoull(vm["base"].as<std::string>(), nullptr, 16);
 
         cs_arch arch;
         cs_mode mode;
