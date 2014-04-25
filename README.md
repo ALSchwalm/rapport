@@ -32,7 +32,7 @@ To see a list of available options, execute `rapport --help`. Below is a more co
     - address in hex which will be used as the starting point for all address output
 
 - `pad` _bytes_
-    - number of bytes to prepend to the raw output in the form of '~' characters. (this is useful for exploiting a stack overflow
+    - number of bytes to prepend to the raw output in the form of '~' characters. (this is useful for exploiting a stack overflow)
 
 - `depth` _bytes_
     - number of bytes to examine for gadgets before each gadget-terminating opcode (i.e. retn, call, etc.)
