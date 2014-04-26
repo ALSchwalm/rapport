@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        unsigned long totalGadgets = 0;
         // Find the opcodes executable from the RETNs
         for (auto retn : retns) {
             for (int innerDepth = 1; innerDepth < depth; ++innerDepth) {
@@ -90,9 +91,13 @@ int main(int argc, char *argv[]) {
                         chain.emplace_back(std::move(instruction.opcode));
                     }
                     if (vm.count("verbose") && !trie[chain]) {
-                        for (const auto& instruction : instructions) {
-                            std::cout << "0x" << std::hex << std::distance(contents.begin(), retn-innerDepth) + base;
-                            std::cout << "  " << instruction.mnemonic;
+                        ++totalGadgets;
+                        std::cout << "0x" << std::hex << std::distance(contents.begin(), retn-innerDepth) + base
+                                  << ":  ";
+                        for (auto i = instructions.begin(); i != instructions.end(); ++i) {
+                            if (i != instructions.begin())
+                                std::cout << " | ";
+                            std::cout << (*i).mnemonic;
                         }
                         std::cout << std::endl;
                     }
@@ -100,6 +105,10 @@ int main(int argc, char *argv[]) {
                 }
 
             }
+        }
+
+        if (vm.count("verbose")) {
+            std::cout << std::endl << std::dec << totalGadgets << " total gadgets located.\n";
         }
 
         // Determine where to jump to execute the instructions in the input
