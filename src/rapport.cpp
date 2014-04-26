@@ -5,7 +5,7 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <algorithm>
-#include <tuple>
+#include <stdexcept>
 
 namespace options = boost::program_options;
 using assembly::Op_t;
@@ -59,6 +59,10 @@ int main(int argc, char *argv[]) {
 
         auto contents = file::readBytes(vm["target"].as<std::string>());
         auto input = file::parse(vm["input"].as<std::string>(), arch, mode);
+
+        if (input.empty()) {
+            throw std::invalid_argument("Inable to parse input file");
+        }
 
         boost::tries::trie_map<Op_t, size_t> trie;
 
@@ -138,5 +142,6 @@ int main(int argc, char *argv[]) {
     }
     catch (const std::exception& e) {
         std::cout << e.what() << std::endl;
+        return 1;
     }
 }
