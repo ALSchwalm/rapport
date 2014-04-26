@@ -1,6 +1,7 @@
 
 #include "file/parser.hpp"
-#include <boost/algorithm/string/predicate.hpp>
+#include "assembly/disassemble.hpp"
+#include "boost/trie/trie_map.hpp"
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -8,16 +9,6 @@
 
 namespace file
 {
-    namespace {
-        uint8_t toByte(const std::string& hexByte) {
-            std::stringstream ss;;
-            uint16_t value;
-            ss << std::hex << hexByte;
-            ss >> value;
-            return value;
-        }
-    }
-
     std::vector<uint8_t> readBytes(const std::string& filename)
     {
         using namespace std;
@@ -38,30 +29,34 @@ namespace file
         return result;
     }
 
-    std::vector<std::vector<uint8_t>> parse(const std::string& filename)
+    std::vector<std::vector<uint8_t>> parse(const std::string& filename,
+                                            cs_arch arch, cs_mode mode)
     {
         std::vector<std::vector<uint8_t>> output;
+        std::vector<uint8_t> data;
         std::ifstream ifs(filename);
 
         if (!ifs) {
             throw std::invalid_argument("No such file: " + filename);
         }
 
-        std::stringstream ss;
         std::string token, line;
 
-        while (std::getline(ifs, line)) {
-            ss << line;
-            std::vector<uint8_t> opcode;
-            while( ss >> token ) {
-                if (boost::algorithm::starts_with(token, "//")) {
-                    break;
-                }
-                opcode.push_back(toByte(token));
+        while(std::getline(ifs, line)) {
+            std::stringstream ss(line);
+
+            while(ss >> token) {
+                auto base = std::stoi(token, nullptr, 16);
+                data.push_back(base);
             }
-            ss.str("");
-            output.push_back(opcode);
         }
+
+        auto assembly = assembly::disassemble(data, arch, mode);
+
+        for(auto& value : assembly) {
+            output.emplace_back(std::move(value.opcode));
+        }
+
         return output;
     }
 }

@@ -5,7 +5,6 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <algorithm>
-#include <utility>
 #include <tuple>
 
 namespace options = boost::program_options;
@@ -59,7 +58,7 @@ int main(int argc, char *argv[]) {
         auto terminators = assembly::getTerminators(arch);
 
         auto contents = file::readBytes(vm["target"].as<std::string>());
-        auto input = file::parse(vm["input"].as<std::string>());
+        auto input = file::parse(vm["input"].as<std::string>(), arch, mode);
 
         boost::tries::trie_map<Op_t, size_t> trie;
 
@@ -84,12 +83,12 @@ int main(int argc, char *argv[]) {
                 if (instructions.size()) {
                     std::vector<Op_t> chain;
                     for(auto& instruction : instructions) {
-                        chain.emplace_back(std::move(std::get<0>(instruction)));
+                        chain.emplace_back(std::move(instruction.opcode));
                     }
                     if (vm.count("verbose") && !trie[chain]) {
                         for (const auto& instruction : instructions) {
                             std::cout << "0x" << std::hex << std::distance(contents.begin(), retn-innerDepth) + base;
-                            std::cout << "  " << std::get<1>(instruction);
+                            std::cout << "  " << instruction.mnemonic;
                         }
                         std::cout << std::endl;
                     }

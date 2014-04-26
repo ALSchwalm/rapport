@@ -8,7 +8,11 @@
 
 namespace assembly {
     using Op_t = std::vector<uint8_t>;
-    using Ins_t = std::pair<Op_t, std::string>;
+
+    struct Ins_t {
+        Op_t opcode;
+        std::string mnemonic;
+    };
 
     // Determine if opcode is valid in a given architecture
     bool isValidOpcode(const Op_t& opcode,

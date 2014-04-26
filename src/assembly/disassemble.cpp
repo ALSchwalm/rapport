@@ -36,7 +36,7 @@ namespace assembly {
             for (size_t i = 0; i < count; ++i) {
                 Op_t opcode(insn[i].bytes, insn[i].bytes+insn[i].size);
                 std::string str = std::string(insn[i].mnemonic) + " " + std::string(insn[i].op_str);
-                Ins_t instruction(std::move(opcode), std::move(str));
+                Ins_t instruction{std::move(opcode), std::move(str)};
                 instructions.emplace_back(std::move(instruction));
             }
             cs_free(insn, count);

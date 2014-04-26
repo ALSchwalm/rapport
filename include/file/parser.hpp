@@ -3,13 +3,15 @@
 
 #include <vector>
 #include <cstdint>
-#include "boost/trie/trie_map.hpp"
+#include <string>
+#include <capstone/capstone.h>
 
 namespace file
 {
     std::vector<uint8_t> readBytes(const std::string& filename);
 
-    std::vector<std::vector<uint8_t>> parse(const std::string& filename);
+    std::vector<std::vector<uint8_t>> parse(const std::string& filename,
+                                            cs_arch arch, cs_mode mode);
 
 }
 
