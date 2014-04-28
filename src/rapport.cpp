@@ -68,9 +68,14 @@ int main(int argc, char *argv[]) {
 
         // Locate all RETNs
         std::vector<Op_t::iterator> retns;
-        for (auto i = contents.begin(); i != contents.end(); ++i) {
-            if (std::find(terminators.begin(), terminators.end(), *i) != terminators.end()) {
-                retns.push_back(i);
+        for (const auto& terminator : terminators) {
+            for(auto i = contents.begin(); i != contents.end(); ) {
+                i = std::search(i, contents.end(), terminator.begin(), terminator.end());
+
+                if (i != contents.end()) {
+                    retns.push_back(i);
+                    ++i;
+                }
             }
         }
 

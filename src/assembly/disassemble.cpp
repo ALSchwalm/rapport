@@ -89,9 +89,9 @@ namespace assembly {
         }
     }
 
-    std::vector<uint8_t> getTerminators(cs_arch arch) {
+    std::vector<Op_t> getTerminators(cs_arch arch) {
         if (arch == CS_ARCH_X86) {
-            return {0xC3};
+            return {{0xC3}};
         }
     }
 

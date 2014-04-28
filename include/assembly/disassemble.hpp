@@ -29,7 +29,7 @@ namespace assembly {
                                                    const std::string& mode);
 
     // Get a vector of opcodes which terminate gadets on an architecture
-    std::vector<uint8_t> getTerminators(cs_arch);
+    std::vector<Op_t> getTerminators(cs_arch);
 }
 
 
